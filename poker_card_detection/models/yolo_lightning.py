@@ -11,7 +11,7 @@ from ultralytics.utils.torch_utils import intersect_dicts
 
 
 def build_model(cfg: DictConfig) -> DetectionModel:
-    from ultralytics.utils.checks import check_file
+    from ultralytics.utils.downloads import attempt_download_asset
 
     data_info = check_det_dataset(str(Path(cfg.data.yaml_path).resolve()))
     num_classes = len(data_info["names"])
@@ -21,8 +21,7 @@ def build_model(cfg: DictConfig) -> DetectionModel:
     model.names = data_info["names"]
     model.nc = num_classes
 
-    # check_file downloads weights from Ultralytics CDN if not found locally
-    weights_path = check_file(cfg.model.weights)
+    weights_path = attempt_download_asset(cfg.model.weights)
     ckpt = torch.load(weights_path, map_location="cpu", weights_only=False)
     pretrained_state = ckpt["model"].float().state_dict() if "model" in ckpt else ckpt
     current_state = model.state_dict()
