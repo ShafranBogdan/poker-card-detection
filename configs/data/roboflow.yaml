@@ -1,0 +1,17 @@
+workspace: augmented-startups
+project: playing-cards-ow27d
+version: 4
+raw_dir: data/raw
+yaml_path: data/raw/data.yaml
+image_size: 640
+workers: 4
+
+augment:
+  degrees: 0.0
+  translate: 0.1
+  scale: 0.5
+  fliplr: 0.5
+  mosaic: 1.0
+  hsv_h: 0.015
+  hsv_s: 0.7
+  hsv_v: 0.4

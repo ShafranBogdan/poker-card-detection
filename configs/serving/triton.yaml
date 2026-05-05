@@ -1,0 +1,8 @@
+api_host: "0.0.0.0"
+api_port: 8090
+
+triton_host: localhost
+triton_http_port: 8000
+triton_grpc_port: 8001
+triton_model_name: poker_card_detection
+triton_model_version: 1

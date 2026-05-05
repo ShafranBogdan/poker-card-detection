@@ -1,0 +1,14 @@
+defaults:
+  - data: roboflow
+  - model: yolo11s
+  - training: default
+  - mlflow: local
+  - serving: triton
+  - _self_
+
+project_name: poker-card-detection
+seed: 42
+
+inference:
+  conf_threshold: 0.5
+  iou_threshold: 0.45
