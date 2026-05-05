@@ -11,6 +11,8 @@ from ultralytics.utils.torch_utils import intersect_dicts
 
 
 def build_model(cfg: DictConfig) -> DetectionModel:
+    from ultralytics.utils.checks import check_file
+
     data_info = check_det_dataset(str(Path(cfg.data.yaml_path).resolve()))
     num_classes = len(data_info["names"])
 
@@ -19,10 +21,11 @@ def build_model(cfg: DictConfig) -> DetectionModel:
     model.names = data_info["names"]
     model.nc = num_classes
 
-    ckpt = torch.load(cfg.model.weights, map_location="cpu", weights_only=False)
+    # check_file downloads weights from Ultralytics CDN if not found locally
+    weights_path = check_file(cfg.model.weights)
+    ckpt = torch.load(weights_path, map_location="cpu", weights_only=False)
     pretrained_state = ckpt["model"].float().state_dict() if "model" in ckpt else ckpt
     current_state = model.state_dict()
-    # load backbone+neck weights, skip detection head (shape mismatch with nc != 80)
     matched = intersect_dicts(pretrained_state, current_state, exclude=["Detect"])
     model.load_state_dict(matched, strict=False)
 
