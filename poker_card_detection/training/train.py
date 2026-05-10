@@ -61,13 +61,7 @@ def export_to_onnx(cfg: DictConfig) -> Path:
     model_path = Path("models/best.pt")
     yolo = YOLO(str(model_path))
     yolo.export(format="onnx", imgsz=cfg.data.image_size, simplify=True, dynamic=False)
-
-    onnx_source = model_path.with_suffix(".onnx")
-    onnx_dest = Path("models/best.onnx")
-    if onnx_source != onnx_dest:
-        onnx_source.rename(onnx_dest)
-
-    return onnx_dest
+    return model_path.with_suffix(".onnx")
 
 
 def _pull_data(cfg: DictConfig) -> None:
