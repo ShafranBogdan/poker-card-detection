@@ -51,8 +51,9 @@ def run_training(cfg: DictConfig) -> None:
     trainer.test(model, datamodule=data_module)
 
     best_ckpt = checkpoint_callback.best_model_path
+    best_score = float(checkpoint_callback.best_model_score)
     _compute_and_log_map(best_ckpt, cfg, mlflow_logger.run_id)
-    _save_final_weights(best_ckpt, cfg)
+    _save_final_weights(best_ckpt, cfg, best_score, mlflow_logger.run_id)
 
 
 def export_to_onnx(cfg: DictConfig) -> Path:
@@ -110,13 +111,45 @@ def _compute_and_log_map(checkpoint_path: str, cfg: DictConfig, run_id: str) -> 
         )
 
 
-def _save_final_weights(checkpoint_path: str, cfg: DictConfig) -> None:
+def _get_best_previous_score(
+    experiment_name: str, tracking_uri: str, current_run_id: str
+) -> float | None:
+    mlflow.set_tracking_uri(tracking_uri)
+    experiment = mlflow.get_experiment_by_name(experiment_name)
+    if experiment is None:
+        return None
+
+    runs = mlflow.search_runs(
+        experiment_ids=[experiment.experiment_id],
+        filter_string="attributes.status = 'FINISHED'",
+        order_by=["metrics.`val/total_loss` ASC"],
+        max_results=10,
+    )
+    runs = runs[runs.run_id != current_run_id]
+    if runs.empty or "metrics.val/total_loss" not in runs.columns:
+        return None
+    return float(runs.iloc[0]["metrics.val/total_loss"])
+
+
+def _save_final_weights(
+    checkpoint_path: str, cfg: DictConfig, current_score: float, run_id: str
+) -> None:
     import torch
     from ultralytics import YOLO
     from ultralytics.data.utils import check_det_dataset
 
     output_dir = Path("models")
     output_dir.mkdir(exist_ok=True)
+
+    previous_best = _get_best_previous_score(
+        cfg.mlflow.experiment_name, cfg.mlflow.tracking_uri, run_id
+    )
+    if previous_best is not None and current_score >= previous_best:
+        print(
+            f"Skipping save: current val/total_loss={current_score:.4f} "
+            f">= best in MLflow={previous_best:.4f}"
+        )
+        return
 
     best_lightning = YOLOLightningModule.load_from_checkpoint(checkpoint_path, cfg=cfg)
 
@@ -130,3 +163,4 @@ def _save_final_weights(checkpoint_path: str, cfg: DictConfig) -> None:
     torch.save(
         {"model": yolo.model, "names": data_info["names"]}, output_dir / "best.pt"
     )
+    print(f"Saved new best model: val/total_loss={current_score:.4f}")

@@ -38,7 +38,12 @@ def infer(source: str, model_path: str = "models/best.pt", overrides=None):
     from poker_card_detection.inference.predict import load_model, predict_image
 
     model = load_model(model_path)
-    result = predict_image(model, source, cfg.inference.conf_threshold)
+    result = predict_image(
+        model,
+        source,
+        conf_threshold=cfg.inference.conf_threshold,
+        iou_threshold=cfg.inference.iou_threshold,
+    )
     print(json.dumps(result, indent=2))
 
 
