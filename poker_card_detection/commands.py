@@ -31,6 +31,13 @@ def export(overrides=None):
     export_to_onnx(cfg)
 
 
+def setup_triton(overrides=None):
+    cfg = _load_cfg(overrides)
+    from poker_card_detection.serving.triton_setup import prepare_triton_repository
+
+    prepare_triton_repository(cfg)
+
+
 def infer(source: str, model_path: str = "models/best.pt", overrides=None):
     import json
 
@@ -47,10 +54,15 @@ def infer(source: str, model_path: str = "models/best.pt", overrides=None):
     print(json.dumps(result, indent=2))
 
 
-def serve(overrides=None):
+def serve(use_triton: bool = False, overrides=None):
     import uvicorn
 
     cfg = _load_cfg(overrides)
+
+    from poker_card_detection.serving.api import initialize
+
+    initialize(use_triton=use_triton)
+
     uvicorn.run(
         "poker_card_detection.serving.api:app",
         host=cfg.serving.api_host,
@@ -65,6 +77,7 @@ def main():
             "download": download,
             "train": train,
             "export": export,
+            "setup-triton": setup_triton,
             "infer": infer,
             "serve": serve,
         }

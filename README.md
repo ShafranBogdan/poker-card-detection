@@ -4,7 +4,7 @@
 
 **Датасет:** [Playing Cards Object Detection (Roboflow)](https://universe.roboflow.com/augmented-startups/playing-cards-ow27d)
 
-**Модель:** YOLO11s с дообучением через PyTorch Lightning.
+**Модель:** YOLO11s с дообучением через PyTorch Lightning
 
 ---
 
@@ -24,7 +24,7 @@ uv sync
 # Установить pre-commit хуки
 uv run pre-commit install
 
-# Получить бесплатный API ключ на roboflow.com и задать переменную окружения
+# Получить бесплатный API ключ на roboflow.com
 export ROBOFLOW_API_KEY=your_key_here
 ```
 
@@ -36,51 +36,70 @@ export ROBOFLOW_API_KEY=your_key_here
 # 1. Скачать датасет (загружается с Roboflow, версионируется через DVC)
 uv run poker-cards download
 
-# 2. Запустить MLflow UI (в отдельном терминале)
+# 2. Запустить MLflow UI
 mlflow ui --port 5001
 
-# 3. Запустить обучение (YOLO11s, 100 эпох, логи в MLflow на 127.0.0.1:5001)
+# 3. Запустить обучение
 uv run poker-cards train
 
-# Переопределить гиперпараметры через синтаксис Hydra:
+# Переопределить гиперпараметры через Hydra:
 uv run poker-cards train '["training.epochs=10", "training.batch_size=32"]'
 ```
 
-Результаты экспериментов — в MLflow UI по адресу `http://127.0.0.1:5001`.
-
 ---
 
-## Подготовка к продакшену
+## Использование Triton
 
 ```bash
 # Экспортировать обученную модель в ONNX
 uv run poker-cards export
 # → models/best.onnx
 
-# (Опционально) Конвертировать в TensorRT из ONNX:
-./scripts/export_tensorrt.sh
+# Подготовить репозиторий моделей для Triton
+uv run poker-cards setup-triton
+# → models/triton/poker_card_detection/config.pbtxt
+# → models/triton/poker_card_detection/1/model.onnx
 ```
-
-Для запуска инференса достаточно одного артефакта: `models/best.pt` (или `models/best.onnx`).
 
 ---
 
 ## Инференс
 
-**Одно изображение:**
+**Одно изображение (CLI):**
 
 ```bash
 uv run poker-cards infer --source path/to/image.jpg
 ```
 
-**FastAPI сервер** (принимает `POST /detect` с файлом изображения):
+**FastAPI сервер — локальная модель (дефолт):**
 
 ```bash
 uv run poker-cards serve
-# → http://localhost:8090/detect
+# → http://localhost:8090
 ```
 
-Пример запроса:
+**FastAPI сервер — через Triton:**
+
+```bash
+# Сначала запустить Triton (требует Docker + NVIDIA GPU):
+docker run --gpus all -p 8000:8000 -p 8001:8001 \
+  -v $(pwd)/models/triton:/models \
+  nvcr.io/nvidia/tritonserver:24.07-py3 \
+  tritonserver --model-repository=/models
+
+# Затем запустить FastAPI с Triton-бэкендом:
+uv run poker-cards serve --use-triton true
+```
+
+Проверить активный бэкенд:
+
+```bash
+curl http://localhost:8090/health
+# {"status": "ok", "backend": "local"}
+# {"status": "ok", "backend": "triton"}
+```
+
+Пример запроса к API:
 
 ```bash
 curl -X POST http://localhost:8090/detect \
@@ -92,25 +111,18 @@ curl -X POST http://localhost:8090/detect \
 ```json
 {
   "detections": [
-    { "class": "Ah", "confidence": 0.96, "bbox": [0.32, 0.45, 0.12, 0.18] }
+    { "class": "AH", "confidence": 0.96, "bbox": [0.32, 0.45, 0.12, 0.18] },
+    { "class": "KH", "confidence": 0.94, "bbox": [0.55, 0.44, 0.11, 0.17] }
   ],
-  "poker_hand": "Royal Flush",
-  "cards_found": 5
+  "poker_hand": "One Pair",
+  "cards_found": 2
 }
 ```
 
 **Streamlit UI** (веб-камера + загрузка фото):
 
 ```bash
+# FastAPI должен быть запущен
 uv run streamlit run poker_card_detection/serving/ui.py
 # → http://localhost:8501
-```
-
-**Triton Inference Server:**
-
-```bash
-docker run --gpus all -p 8000:8000 -p 8001:8001 \
-  -v $(pwd)/models/triton:/models \
-  nvcr.io/nvidia/tritonserver:24.07-py3 \
-  tritonserver --model-repository=/models
 ```

@@ -1,7 +1,7 @@
 import requests
 import streamlit as st
 
-API_URL = "http://localhost:8080/detect"
+API_URL = "http://localhost:8090/detect"
 
 st.title("Poker Card Detection")
 st.write("Upload a photo of playing cards to detect and classify the poker hand.")
