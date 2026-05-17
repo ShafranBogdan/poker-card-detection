@@ -3,10 +3,8 @@
 Система детектирует игральные карты на фото или в потоке с веб-камеры, определяет масть и номинал каждой карты (52 класса) и классифицирует покерную комбинацию (Royal Flush, Full House и т.д.).
 
 **Датасет:** [Playing Cards Object Detection (Roboflow)](https://universe.roboflow.com/augmented-startups/playing-cards-ow27d)
-— 10 100 изображений, 52 класса, аннотации в формате YOLO, ~1–2 ГБ.
 
 **Модель:** YOLO11s с дообучением через PyTorch Lightning.
-Ожидаемый mAP@0.5 ≥ 0.90 после обучения.
 
 ---
 
@@ -39,16 +37,16 @@ export ROBOFLOW_API_KEY=your_key_here
 uv run poker-cards download
 
 # 2. Запустить MLflow UI (в отдельном терминале)
-mlflow ui --port 8080
+mlflow ui --port 5001
 
-# 3. Запустить обучение (YOLO11s, 100 эпох, логи в MLflow на 127.0.0.1:8080)
+# 3. Запустить обучение (YOLO11s, 100 эпох, логи в MLflow на 127.0.0.1:5001)
 uv run poker-cards train
 
 # Переопределить гиперпараметры через синтаксис Hydra:
 uv run poker-cards train '["training.epochs=10", "training.batch_size=32"]'
 ```
 
-Результаты экспериментов — в MLflow UI по адресу `http://127.0.0.1:8080`.
+Результаты экспериментов — в MLflow UI по адресу `http://127.0.0.1:5001`.
 
 ---
 

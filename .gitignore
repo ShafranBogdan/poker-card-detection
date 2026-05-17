@@ -77,8 +77,6 @@ cython_debug/
 # uv
 .python-version
 
-# Data and models contents are managed by DVC
-# DVC creates data/.gitignore and models/.gitignore automatically
 /dvc_remote/
 
 # Model weights and artifacts (use DVC)
@@ -99,10 +97,6 @@ runs/
 .vscode/
 *.swp
 *.swo
-
-# OS
-.DS_Store
-Thumbs.db
 
 # Env files
 .env
